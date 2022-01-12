@@ -11,17 +11,23 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    env:
+      registryName: registryName.azurecr.io
+      repositoryName: wth/dotnetcoreapp
+      dockerFolderPath: Application/src/RazorPagesTestSample
+      tag: dotnetcoreapp/node-test:$(date +%s)
 
     steps:
-    - uses: actions/checkout@v2
-    - name: docker login
-      env:
-        DOCKER_USER: ${{secrets.DOCKER_USER}}
-        DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
-      run: |
-        docker login -u $DOCKER_USER -p $DOCKER_PASSWORD 
+     # Checkout code
+    - uses: actions/checkout@main
+
+      # Log into Azure
+    - uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag chamodshehanka/node-test:$(date +%s)
+      run: docker build . --file ./Application/src/RazorPagesTestSample --tag dotnetcoreapp/node-test:$(date +%s)
       
     - name: Docker Push
-      run: docker push ${{secrets.DOCKER_USER}}/wth/dotnetcoreapp
+      run: docker push wth/dotnetcoreapp
