@@ -29,5 +29,11 @@ jobs:
     - name: Build
       run: dotnet build --no-restore ./Application/src/RazorPagesTestSample/RazorPagesTestSample.csproj
       
+    - name: Restore dependencies for test
+      run: dotnet restore ./Application/tests/RazorPagesTestSample.Tests/RazorPagesTestSample.Tests.csproj
+      
+    - name: Build for test
+      run: dotnet build --no-restore ./Application/tests/RazorPagesTestSample.Tests/RazorPagesTestSample.Tests.csproj
+
     - name: Test
       run: dotnet test --no-build --verbosity normal ./Application/tests/RazorPagesTestSample.Tests/RazorPagesTestSample.Tests.csproj
