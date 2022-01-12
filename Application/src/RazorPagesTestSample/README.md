@@ -7,4 +7,3 @@ If you aren't using an IDE with built-in test features, execute the following co
 ```console
 dotnet test
 ```
-NaveedndockerImageTest
