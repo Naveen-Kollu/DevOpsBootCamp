@@ -1,37 +1,51 @@
-name: Docker Image CI
-
+name: .NET
 on:
   push:
     branches:
-      - main
+      - "main"
     paths:
-      - 'Application/**'
+      - '.github/workflows/dotnet.yml'
+      - "Application"
   pull_request:
-    branches:
-      - main
+    paths:
+      - "Application/**"
+env:
+  registryName: "praksdevopsreg.azurecr.io"
+  repositoryName: "wth/dotnetcoreapp"
+  dockerFolderPath: "Application/src/RazorPagesTestSample"
+  tag: ${{ github.run_number }}
 
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
-    env:
-      registryName: registryName.azurecr.io
-      repositoryName: wth/dotnetcoreapp
-      dockerFolderPath: Application/src/RazorPagesTestSample
-      tag: dotnetcoreapp/node-test:$(date +%s)
-
     steps:
-     # Checkout code
-    - uses: actions/checkout@main
-
-      # Log into Azure
-    - uses: azure/login@v1
+    - uses: actions/checkout@v2
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
       with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-        
-    - name: Build the Docker image
-      run: docker build . --file ./Application/src/RazorPagesTestSample/Dockerfile --tag dotnetcoreapp/node-test:$(date +%s)
-      
-    - name: Docker Push
-      run: docker push wth/dotnetcoreapp
+        dotnet-version: 3.1
+    - name: Restore dependencies
+      run: dotnet restore Application/src/RazorPagesTestSample/RazorPagesTestSample.csproj
+    - name: Build
+      run: dotnet build --no-restore Application/src/RazorPagesTestSample/RazorPagesTestSample.csproj
+    - name: Test
+      run: dotnet test --no-build --verbosity normal Application/tests/RazorPagesTestSample.Tests/RazorPagesTestSample.Tests.csproj
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Docker Login
+        run: docker login $registryName -u ${{ secrets.ACR_USERNAME }} -p ${{ secrets.ACR_PASSWORD }}
+      - name: Docker build
+        run: docker build -t $registryName/$repositoryName:$tag --build-arg build_version=$tag $dockerFolderPath
+      - name: Docker push
+        run: docker push $registryName/$repositoryName:$tag
+      - name: "login to azure"
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_LOGIN }}
+      - uses: azure/webapps-deploy@v2
+        name: deploy to dev
+        with:
+          app-name: praksdevops-dev
+          images: 'praksdevopsreg.azurecr.io/wth/dotnetcoreapp:${{ github.run_number }}'
